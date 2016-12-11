@@ -26,10 +26,15 @@ class LeafNode(Node):
     self.is_leaf = True
 
   def fetch(self, startTime, endTime, now=None, result_queue=None, requestContext=None):
+    try:
+      result = self.reader.fetch(startTime, endTime, now, requestContext);
+    except TypeError:
+      result = self.reader.fetch(startTime, endTime);
+
     if result_queue:
-      result_queue.put((self, self.reader.fetch(startTime, endTime, now, requestContext)))
+      result_queue.put((self, result))
     else:
-      return self.reader.fetch(startTime, endTime, now, requestContext)
+      return result
 
   @property
   def intervals(self):
