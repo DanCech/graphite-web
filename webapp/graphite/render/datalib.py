@@ -17,6 +17,7 @@ from graphite.storage import STORE
 from graphite.readers import FetchInProgress
 from django.conf import settings
 from graphite.util import epoch
+from graphite.worker_pool.pool import get_pool
 
 from traceback import format_exc
 
@@ -113,23 +114,29 @@ def fetchData(requestContext, pathExpr):
 
   def _fetchData(pathExpr,startTime, endTime, requestContext, seriesList):
     matching_nodes = STORE.find(pathExpr, startTime, endTime, local=requestContext['localOnly'])
-    fetches = [(node, node.fetch(startTime, endTime)) for node in matching_nodes if node.is_leaf]
+    pool = get_pool()
 
-    for node, results in fetches:
-      if isinstance(results, FetchInProgress):
-        results = results.waitForResults()
+    jobs = []
+    for node in matching_nodes:
+      if node.is_leaf:
+        jobs.append((node.fetch, startTime, endTime))
 
-      if not results:
+    results = pool.put_multi(jobs)
+    for path, result in results:
+      if isinstance(result, FetchInProgress):
+        result = result.waitForResults()
+
+      if not result:
         log.info("render.datalib.fetchData :: no results for %s.fetch(%s, %s)" % (node, startTime, endTime))
         continue
 
       try:
-          (timeInfo, values) = results
+          (timeInfo, values) = result
       except ValueError as e:
           raise Exception("could not parse timeInfo/values from metric '%s': %s" % (node.path, e))
       (start, end, step) = timeInfo
 
-      series = TimeSeries(node.path, start, end, step, values)
+      series = TimeSeries(path, start, end, step, values)
       series.pathExpression = pathExpr #hack to pass expressions through to render functions
 
       # Used as a cache to avoid recounting series None values below.
@@ -191,7 +198,7 @@ def fetchData(requestContext, pathExpr):
       else:
         seriesList[series.name] = series
 
-    # Stabilize the order of the results by ordering the resulting series by name.
+    # Stabilize the order of the result by ordering the resulting series by name.
     # This returns the result ordering to the behavior observed pre PR#1010.
     return [seriesList[k] for k in sorted(seriesList)]
 

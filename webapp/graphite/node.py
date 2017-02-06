@@ -26,7 +26,7 @@ class LeafNode(Node):
     self.is_leaf = True
 
   def fetch(self, startTime, endTime):
-    return self.reader.fetch(startTime, endTime)
+    return (self.path, self.reader.fetch(startTime, endTime))
 
   @property
   def intervals(self):

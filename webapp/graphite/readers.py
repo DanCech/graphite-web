@@ -58,7 +58,7 @@ class MultiReader(object):
 
     for n in self.nodes:
       try:
-        fetches.append(n.fetch(startTime, endTime))
+        fetches.append(n.fetch(startTime, endTime)[1])
       except:
         log.exception("Failed to initiate subfetch for %s" % str(n))
 
