@@ -22,7 +22,7 @@ from graphite.logger import log
 from graphite.storage import STORE
 from graphite.readers import FetchInProgress
 from django.conf import settings
-from graphite.util import epoch
+from graphite.util import timebounds
 from graphite.remote_storage import RemoteReader
 
 from traceback import format_exc
@@ -114,19 +114,11 @@ class TimeSeries(list):
     }
 
 
-def _timebounds(requestContext):
-  startTime = int(epoch(requestContext['startTime']))
-  endTime = int(epoch(requestContext['endTime']))
-  now = int(epoch(requestContext['now']))
-
-  return (startTime, endTime, now)
-
-
 def prefetchRemoteData(requestContext, pathExpressions):
   if requestContext['localOnly']:
     return
 
-  (startTime, endTime, now) = _timebounds(requestContext)
+  (startTime, endTime, now) = timebounds(requestContext)
 
   # Go through all of the remote nodes, and launch a fetch for each one.
   # Each fetch will take place in its own thread, since it's naturally parallel work.
@@ -141,7 +133,7 @@ def prefetchRemoteData(requestContext, pathExpressions):
 
 def fetchRemoteData(requestContext, pathExpr, nodes):
   start = time.time()
-  (startTime, endTime, now) = _timebounds(requestContext)
+  (startTime, endTime, now) = timebounds(requestContext)
   log.info("Got timebounds %fs" % (time.time() - start))
 
   # Go through all of the nodes, and launch a fetch for each one.
@@ -198,7 +190,7 @@ def fetchData(requestContext, pathExpr):
   start = time.time()
 
   seriesList = {}
-  (startTime, endTime, now) = _timebounds(requestContext)
+  (startTime, endTime, now) = timebounds(requestContext)
 
   retries = 1 # start counting at one to make log output and settings more readable
   while True:
