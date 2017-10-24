@@ -2053,6 +2053,7 @@ class FunctionsTest(TestCase):
         result = functions.sortByMinima({}, seriesList)
         self.assertEqual(result, expectedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_useSeriesAbove(self):
         seriesList = self._gen_series_list_with_data(
             key=['test.foo'],
@@ -2070,7 +2071,6 @@ class FunctionsTest(TestCase):
             if rv:
                 return rv
             raise KeyError('{} not found!'.format(path_expression))
-
 
         with patch('graphite.render.evaluator.fetchData', mock_data_fetcher):
             inputSeries = TimeSeries('test.value',600,1200,60,[0,1,2,3,4,5,6,7,8,9])
@@ -2110,6 +2110,7 @@ class FunctionsTest(TestCase):
 
         self.assertEqual(results, expectedResults)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_useSeriesAbove_fetch_returns_None(self):
         def mock_data_fetcher(reqCtx, path_expression):
             return []
@@ -3668,6 +3669,7 @@ class FunctionsTest(TestCase):
         self.assertEqual(list(result[0]), list(expectedResult[0]))
         self.assertEqual(result, expectedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_timeStack(self):
         self.maxDiff = None
 
@@ -3727,6 +3729,7 @@ class FunctionsTest(TestCase):
         expectedResult = [ ]
         self.assertEqual(results, expectedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_timeShift(self):
         seriesList = self._gen_series_list_with_data(
             key=['test.value'],
@@ -3779,6 +3782,7 @@ class FunctionsTest(TestCase):
         expectedResult = [ ]
         self.assertEqual(results, expectedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_timeShift_resetEnd_False(self):
         # Test if the timeseries returns data past the end of the original end-time is kept
         # with resetEnd set to False
@@ -3821,6 +3825,7 @@ class FunctionsTest(TestCase):
 
         self.assertEqual(results, expectedResults)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_timeShift_alignDST(self):
         seriesList = self._gen_series_list_with_data(
             key=['test.value'],
@@ -3956,6 +3961,7 @@ class FunctionsTest(TestCase):
         self.assertEqual(result, expectedResult)
 
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_linearRegression(self):
         seriesList = self._gen_series_list_with_data(
             key=['test.value'],
@@ -3997,6 +4003,7 @@ class FunctionsTest(TestCase):
 
         self.assertEqual(results, expectedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_applyByNode(self):
         seriesList = self._gen_series_list_with_data(
             key=['servers.s1.disk.bytes_used', 'servers.s1.disk.bytes_free','servers.s2.disk.bytes_used','servers.s2.disk.bytes_free'],
@@ -4030,6 +4037,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_applyByNode_newName(self):
         seriesList = self._gen_series_list_with_data(
             key=['servers.s1.disk.bytes_used', 'servers.s1.disk.bytes_free','servers.s2.disk.bytes_used','servers.s2.disk.bytes_free'],
@@ -4077,7 +4085,7 @@ class FunctionsTest(TestCase):
             data=range(20, 25)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4085,7 +4093,7 @@ class FunctionsTest(TestCase):
                 data=range(10, 25)
             )
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             with self.assertRaisesRegexp(Exception, '^Unsupported window function: invalid$'):
                 functions.movingWindow(request_context, seriesList, 5, 'invalid')
 
@@ -4097,7 +4105,7 @@ class FunctionsTest(TestCase):
             data=range(0, 10)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4109,7 +4117,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingAverage(collectd.test-db0.load.value,10)', 20, 30, 1, [None, None, None, None, None, 2.0, 2.5, 3.0, 3.5, 4.0])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingWindow(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4123,7 +4131,7 @@ class FunctionsTest(TestCase):
     def test_movingMedian_emptySeriesList(self):
         self.assertEqual(functions.movingMedian({},[],""), [])
 
-    def test_movingMedian_evaluateTokens_returns_none(self):
+    def test_movingMedian_evaluateTarget_returns_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4131,7 +4139,7 @@ class FunctionsTest(TestCase):
             data=range(10, 25)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4143,7 +4151,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMedian(collectd.test-db0.load.value,10)', 20, 25, 1, [None, None, None, None, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMedian(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4153,7 +4161,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingMedian_evaluateTokens_returns_half_none(self):
+    def test_movingMedian_evaluateTarget_returns_half_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4161,7 +4169,7 @@ class FunctionsTest(TestCase):
             data=range(10, 110)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4173,7 +4181,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMedian(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 0, 1, 1, 2, 2, 3, 3, 4, 4])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMedian(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4183,7 +4191,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingMedian_evaluateTokens_returns_empty_list(self):
+    def test_movingMedian_evaluateTarget_returns_empty_list(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=610,
@@ -4191,12 +4199,12 @@ class FunctionsTest(TestCase):
             data=range(10, 110)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return []
 
         expectedResults = []
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMedian(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4214,7 +4222,7 @@ class FunctionsTest(TestCase):
             data=range(10, 110)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=600,
@@ -4226,7 +4234,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMedian(collectd.test-db0.load.value,60)', 660, 700, 1, range(30, 70)),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMedian(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4244,7 +4252,7 @@ class FunctionsTest(TestCase):
             data=range(10, 610)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=600,
@@ -4256,7 +4264,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMedian(collectd.test-db0.load.value,"-1min")', 660, 700, 1, range(30, 70)),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMedian(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4269,7 +4277,7 @@ class FunctionsTest(TestCase):
     def test_movingAverage_emptySeriesList(self):
         self.assertEqual(functions.movingAverage({},[],""), [])
 
-    def test_movingAverage_evaluateTokens_returns_none(self):
+    def test_movingAverage_evaluateTarget_returns_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4277,7 +4285,7 @@ class FunctionsTest(TestCase):
             data=range(0, 25)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4289,7 +4297,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingAverage(collectd.test-db0.load.value,10)', 20, 25, 1, [None, None, None, None, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingAverage(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4299,7 +4307,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingAverage_evaluateTokens_returns_half_none(self):
+    def test_movingAverage_evaluateTarget_returns_half_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4307,7 +4315,7 @@ class FunctionsTest(TestCase):
             data=range(0, 10)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4319,7 +4327,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingAverage(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingAverage(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4330,7 +4338,7 @@ class FunctionsTest(TestCase):
         self.assertEqual(list(result[0]), list(expectedResults[0]))
         self.assertEqual(result, expectedResults)
 
-    def test_movingAverage_evaluateTokens_returns_empty_list(self):
+    def test_movingAverage_evaluateTarget_returns_empty_list(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=610,
@@ -4338,12 +4346,12 @@ class FunctionsTest(TestCase):
             data=range(10, 110)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return []
 
         expectedResults = []
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingAverage(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4361,7 +4369,7 @@ class FunctionsTest(TestCase):
             data=range(10, 110)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=600,
@@ -4377,7 +4385,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingAverage(collectd.test-db0.load.value,60)', 660, 700, 1, frange(29.5, 69.5, 1)),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingAverage(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4395,7 +4403,7 @@ class FunctionsTest(TestCase):
             data=range(10, 110)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=600,
@@ -4412,7 +4420,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingAverage(collectd.test-db0.load.value,"-1min")', 660, 700, 1, frange(29.5, 69.5, 1)),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingAverage(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4425,7 +4433,7 @@ class FunctionsTest(TestCase):
     def test_movingMin_emptySeriesList(self):
         self.assertEqual(functions.movingMin({},[],""), [])
 
-    def test_movingMin_evaluateTokens_returns_none(self):
+    def test_movingMin_evaluateTarget_returns_none(self):
         start = 10
         end = start + 15
         seriesList = self._gen_series_list_with_data(
@@ -4435,7 +4443,7 @@ class FunctionsTest(TestCase):
             data=range(start, end)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             seriesList = [
                 TimeSeries('collectd.test-db0.load.value', 10, 25, 1, [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None])
             ]
@@ -4447,7 +4455,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMin(collectd.test-db0.load.value,10)', 20, 25, 1, [None, None, None, None, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMin(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4457,7 +4465,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingMin_evaluateTokens_returns_half_none(self):
+    def test_movingMin_evaluateTarget_returns_half_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4465,7 +4473,7 @@ class FunctionsTest(TestCase):
             data=[2, 1] * 5
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             seriesList = [
                 TimeSeries('collectd.test-db0.load.value', 10, 30, 1, [None] * 10 + [2, 1] * 5)
             ]
@@ -4477,7 +4485,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMin(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 2, 1, 1, 1, 1, 1, 1, 1, 1] )
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMin(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4487,7 +4495,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingMin_evaluateTokens_returns_empty_list(self):
+    def test_movingMin_evaluateTarget_returns_empty_list(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=610,
@@ -4495,12 +4503,12 @@ class FunctionsTest(TestCase):
             data=range(10, 10 + 100)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return []
 
         expectedResults = []
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMin(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4518,7 +4526,7 @@ class FunctionsTest(TestCase):
             data=[10, 1] * 5
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4530,7 +4538,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMin(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 10] + [1] * 8)
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMin(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4548,7 +4556,7 @@ class FunctionsTest(TestCase):
             data=[10, 1] * 50
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=600,
@@ -4560,7 +4568,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMin(collectd.test-db0.load.value,"-1min")', 660, 700, 1, [1]*40),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMin(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4573,7 +4581,7 @@ class FunctionsTest(TestCase):
     def test_movingMax_emptySeriesList(self):
         self.assertEqual(functions.movingMax({},[],""), [])
 
-    def test_movingMax_evaluateTokens_returns_none(self):
+    def test_movingMax_evaluateTarget_returns_none(self):
         start = 10
         end = start + 15
         seriesList = self._gen_series_list_with_data(
@@ -4583,7 +4591,7 @@ class FunctionsTest(TestCase):
             data=range(start, end)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             seriesList = [
                 TimeSeries('collectd.test-db0.load.value', 10, 25, 1, [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None])
             ]
@@ -4595,7 +4603,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMax(collectd.test-db0.load.value,10)', 20, 25, 1, [None, None, None, None, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMax(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4605,7 +4613,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingMax_evaluateTokens_returns_half_none(self):
+    def test_movingMax_evaluateTarget_returns_half_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4613,7 +4621,7 @@ class FunctionsTest(TestCase):
             data=[1, 2] * 5
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             seriesList = [
                 TimeSeries('collectd.test-db0.load.value', 10, 30, 1, [None] * 10 + [1, 2] * 5)
             ]
@@ -4625,7 +4633,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMax(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 1, 2, 2, 2, 2, 2, 2, 2, 2])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMax(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4635,7 +4643,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingMax_evaluateTokens_returns_empty_list(self):
+    def test_movingMax_evaluateTarget_returns_empty_list(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=610,
@@ -4643,12 +4651,12 @@ class FunctionsTest(TestCase):
             data=range(10, 10 + 100)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return []
 
         expectedResults = []
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMax(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4666,7 +4674,7 @@ class FunctionsTest(TestCase):
             data=[1, 2] * 5
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=10,
@@ -4678,7 +4686,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMax(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 1, 2, 2, 2, 2, 2, 2, 2, 2])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMax(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4696,7 +4704,7 @@ class FunctionsTest(TestCase):
             data=[1, 10] * 50
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(
                 key='collectd.test-db0.load.value',
                 start=600,
@@ -4708,7 +4716,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingMax(collectd.test-db0.load.value,"-1min")', 660, 700, 1, [10] * 40),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingMax(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4734,7 +4742,7 @@ class FunctionsTest(TestCase):
         result = functions.holtWintersAnalysis(seriesList)
         self.assertEqual(result, expectedResults)
 
-    def test_movingSum_evaluateTokens_returns_none(self):
+    def test_movingSum_evaluateTarget_returns_none(self):
         start = 10
         end = start + 15
         seriesList = self._gen_series_list_with_data(
@@ -4744,7 +4752,7 @@ class FunctionsTest(TestCase):
             data=range(start, end)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             seriesList = [
                 TimeSeries('collectd.test-db0.load.value', 10, 25, 1, [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None])
             ]
@@ -4756,7 +4764,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingSum(collectd.test-db0.load.value,10)', 20, 25, 1, [None, None, None, None, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingSum(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4766,7 +4774,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingSum_evaluateTokens_returns_half_none(self):
+    def test_movingSum_evaluateTarget_returns_half_none(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=20,
@@ -4774,7 +4782,7 @@ class FunctionsTest(TestCase):
             data=range(0, 10)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             seriesList = [
                 TimeSeries('collectd.test-db0.load.value', 10, 30, 1, [None] * 10 + range(0, 10))
             ]
@@ -4786,7 +4794,7 @@ class FunctionsTest(TestCase):
             TimeSeries('movingSum(collectd.test-db0.load.value,10)', 20, 30, 1, [None, 0.0, 1.0, 3.0, 6.0, 10.0, 15.0, 21.0, 28.0, 36.0])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingSum(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4796,7 +4804,7 @@ class FunctionsTest(TestCase):
             )
         self.assertEqual(result, expectedResults)
 
-    def test_movingSum_evaluateTokens_returns_empty_list(self):
+    def test_movingSum_evaluateTarget_returns_empty_list(self):
         seriesList = self._gen_series_list_with_data(
             key='collectd.test-db0.load.value',
             start=610,
@@ -4804,12 +4812,12 @@ class FunctionsTest(TestCase):
             data=range(10, 10 + 100)
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return []
 
         expectedResults = []
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingSum(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4827,14 +4835,14 @@ class FunctionsTest(TestCase):
             data=[1] * 100
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(key='collectd.test-db0.load.value', start=600, end=700, step=1, data=[1] * 100)
 
         expectedResults = [
             TimeSeries('movingSum(collectd.test-db0.load.value,60)', 660, 700, 1, [60.0]*40)
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingSum(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4852,14 +4860,14 @@ class FunctionsTest(TestCase):
             data=[1] * 100
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(key='collectd.test-db0.load.value', start=600, end=700, step=1, data=[1] * 100)
 
         expectedResults = [
             TimeSeries('movingSum(collectd.test-db0.load.value,"-1min")', 660, 700, 1, [60.0]*40),
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.movingSum(
                 self._build_requestContext(
                     startTime=datetime(1970, 1, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4880,14 +4888,14 @@ class FunctionsTest(TestCase):
 
         seriesList = gen_seriesList(10)
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return gen_seriesList()
 
         expectedResults = [
             TimeSeries('holtWintersForecast(collectd.test-db0.load.value)', 605400, 700, 1, [])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.holtWintersForecast(
                 self._build_requestContext(
                     startTime=datetime(1970, 2, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4918,7 +4926,7 @@ class FunctionsTest(TestCase):
 
         seriesList = gen_seriesList(start_time, points)
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return gen_seriesList(start_time-week_seconds, (week_seconds/step)+points)
 
         expectedResults = [
@@ -4926,7 +4934,7 @@ class FunctionsTest(TestCase):
             TimeSeries('holtWintersConfidenceUpper(collectd.test-db0.load.value)', start_time, start_time+(points*step), step, [8.424944558327624, 9.409422251880809, 10.607070189221787, 10.288439865038768, 9.491556863132963, 9.474595784593738, 8.572310478053845, 8.897670449095346, 8.941566968508148, 9.409728797779282])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.holtWintersConfidenceBands(
                 self._build_requestContext(
                     startTime=datetime(1970, 2, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4957,7 +4965,7 @@ class FunctionsTest(TestCase):
 
         seriesList = gen_seriesList(start_time, points)
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return gen_seriesList(start_time-week_seconds, (week_seconds/step)+points)
 
         expectedResults = [
@@ -4967,7 +4975,7 @@ class FunctionsTest(TestCase):
         expectedResults[0].options = {'invisible': True, 'stacked': True}
         expectedResults[1].options = {'stacked': True}
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.holtWintersConfidenceArea(
                 self._build_requestContext(
                     startTime=datetime(1970, 2, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -4998,14 +5006,14 @@ class FunctionsTest(TestCase):
 
         seriesList = gen_seriesList(start_time, points)
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return gen_seriesList(start_time-week_seconds, (week_seconds/step)+points)
 
         expectedResults = [
             TimeSeries('holtWintersAberration(collectd.test-db0.load.value)', start_time, start_time+(points*step), step, [-0.2841206166091448, -0.05810270987744115, 0, 0, 0, 0, 0, 0, 0, 0])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.holtWintersAberration(
                 self._build_requestContext(
                     startTime=datetime(1970, 2, 1, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE)),
@@ -5317,7 +5325,7 @@ class FunctionsTest(TestCase):
         bucketSize = '1hour'
         alignTo = True
 
-        with patch('graphite.render.evaluator.evaluateTokens', lambda *_: []):
+        with patch('graphite.render.functions.evaluateTarget', lambda *_: []):
             request_context = self._build_requestContext(start_time, end_time)
             with self.assertRaises(TypeError):
                 functions.smartSummarize(request_context, None, bucketSize, 'max', alignTo)
@@ -5339,7 +5347,7 @@ class FunctionsTest(TestCase):
             TimeSeries('hitcount(servers.s2.disk.bytes_free, "1d", true)', 0, 172800, 86400, [62164800, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', lambda *_: seriesList):
+        with patch('graphite.render.functions.evaluateTarget', lambda *_: seriesList):
             result = functions.hitcount(
                 self._build_requestContext(endTime=datetime(1970, 1, 2, 0, 0, 0, 0, pytz.timezone(settings.TIME_ZONE))),
                 seriesList, "1d", True)
@@ -5362,7 +5370,7 @@ class FunctionsTest(TestCase):
             TimeSeries('hitcount(servers.s2.disk.bytes_free, "1hour", true)', 0, 18000, 3600, [12956400, 38876400, 64796400, 90716400, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', lambda *_: seriesList):
+        with patch('graphite.render.functions.evaluateTarget', lambda *_: seriesList):
             result = functions.hitcount(
                 self._build_requestContext(endTime=datetime(1970, 1, 1, 0, 4, 0, 0, pytz.timezone(settings.TIME_ZONE))),
                 seriesList,
@@ -5386,7 +5394,7 @@ class FunctionsTest(TestCase):
             TimeSeries('hitcount(servers.s2.disk.bytes_free, "1minute", true)', 0, 300, 60, [3540, 10740, 17940, 25140, None])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', lambda *_: seriesList):
+        with patch('graphite.render.functions.evaluateTarget', lambda *_: seriesList):
             result = functions.hitcount(
                 self._build_requestContext(endTime=datetime(1970, 1, 1, 0, 4, 0, 0, pytz.timezone(settings.TIME_ZONE))),
                 seriesList,
@@ -5410,7 +5418,7 @@ class FunctionsTest(TestCase):
             TimeSeries('hitcount(servers.s2.disk.bytes_free, "1minute")', 0, 240, 60, [3540, 10740, 17940, 25140])
         ]
 
-        with patch('graphite.render.evaluator.evaluateTokens', lambda *_: seriesList):
+        with patch('graphite.render.functions.evaluateTarget', lambda *_: seriesList):
             result = functions.hitcount(
                 self._build_requestContext(endTime=datetime(1970, 1, 1, 0, 4, 0, 0, pytz.timezone(settings.TIME_ZONE))),
                 seriesList,
@@ -5565,10 +5573,10 @@ class FunctionsTest(TestCase):
             data=[14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5, 21.5, 22.5, 23.5, 24.5, 25.5, 26.5, 27.5, 28.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 35.5, 36.5, 37.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 44.5]
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return seriesList
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.exponentialMovingAverage(self._build_requestContext(), seriesList, 30)
 
         self.assertEqual(list(result[0]), list(expectedResults[0]))
@@ -5583,29 +5591,29 @@ class FunctionsTest(TestCase):
             data=[14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5, 21.5, 22.5, 23.5, 24.5, 25.5, 26.5, 27.5, 28.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 35.5, 36.5, 37.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 44.5]
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return seriesList
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.exponentialMovingAverage(self._build_requestContext(), seriesList, "-30s")
 
         self.assertEqual(list(result[0]), list(expectedResults[0]))
         self.assertEqual(result, expectedResults)
 
-    def test_exponentialMovingAverage_evaluateTokens_returns_empty_list(self):
+    def test_exponentialMovingAverage_evaluateTarget_returns_empty_list(self):
         seriesList = self._gen_series_list_with_data(start=600, end=700, data=range(0, 100))
         expectedResults = []
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return []
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.exponentialMovingAverage(self._build_requestContext(endTime=datetime(1970, 1, 1, 0, 9, 0, 0, pytz.timezone(settings.TIME_ZONE))), seriesList, 60)
 
         self.assertEqual(result, expectedResults)
 
-    # test_exponentialMovingAverage_evaluateTokens_returns_half_none
-    def test_exponentialMovingAverage_evaluateTokens_returns_half_none(self):
+    # test_exponentialMovingAverage_evaluateTarget_returns_half_none
+    def test_exponentialMovingAverage_evaluateTarget_returns_half_none(self):
         seriesList = self._gen_series_list_with_data(start=10)
         expectedResults = self._gen_series_list_with_data(
             key='exponentialMovingAverage(collectd.test-db0.load.value,10)',
@@ -5614,10 +5622,10 @@ class FunctionsTest(TestCase):
             data=[0, 0.0, 0.181818, 0.512397, 0.964688, 1.516563, None, 2.149915, 2.849931, 3.604489, 4.403673]
         )
 
-        def mock_evaluateTokens(reqCtx, tokens, replacements=None):
+        def mock_evaluateTarget(reqCtx, tokens, replacements=None):
             return self._gen_series_list_with_data(key='collectd.test-db0.load.value',start=10, end=30, data=([None] * 10 + range(0, 5) + [None] + range(5, 9)))
 
-        with patch('graphite.render.evaluator.evaluateTokens', mock_evaluateTokens):
+        with patch('graphite.render.functions.evaluateTarget', mock_evaluateTarget):
             result = functions.exponentialMovingAverage(self._build_requestContext(endTime=datetime(1970, 1, 1, 0, 9, 0, 0, pytz.timezone(settings.TIME_ZONE))), seriesList, 10)
 
         self.assertEqual(list(result[0]), list(expectedResults[0]))
@@ -5718,7 +5726,7 @@ class FunctionsTest(TestCase):
         return seriesList
 
     def _assert_smartsummarize(self, start_time, end_time, step, bucketSize, alignTo, expectedResults):
-        with patch('graphite.render.evaluator.evaluateTokens', lambda ctx, _: self._gen_smart_summarize_series_list(ctx['startTime'], end_time, step)):
+        with patch('graphite.render.functions.evaluateTarget', lambda ctx, _: self._gen_smart_summarize_series_list(ctx['startTime'], end_time, step)):
             for func in expectedResults:
                 request_context = self._build_requestContext(start_time, end_time)
                 result = functions.smartSummarize(request_context, None, bucketSize, func, alignTo)
@@ -5771,6 +5779,7 @@ class FunctionsTest(TestCase):
         ]
         return (seriesList,mappedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_pipedCall(self):
         queries = [
           'aliasByNode(sortByName(servers.*.disk.*),1,3)'
@@ -5813,6 +5822,7 @@ class FunctionsTest(TestCase):
 
             self.assertEqual(result, expectedResults)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_none_arg(self):
         def mock_data_fetcher(reqCtx, path_expression):
             if path_expression != 'servers.*.disk.*':
@@ -5846,6 +5856,7 @@ class FunctionsTest(TestCase):
 
         self.assertEqual(result, expectedResult)
 
+    @patch('graphite.render.evaluator.prefetchData', lambda *_: None)
     def test_seriesByTag(self):
         class MockTagDB(object):
             def find_series(self, tagExpressions):
