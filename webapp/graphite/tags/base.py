@@ -14,7 +14,6 @@ class BaseTagDB(object):
 
   def __init__(self):
     """Initialize the tag db."""
-    pass
 
   @logtime
   def find_series(self, tags, timer=None):
@@ -55,7 +54,6 @@ class BaseTagDB(object):
     """
     Internal function called by find_series, follows the same semantics allowing base class to implement caching
     """
-    pass
 
   @abc.abstractmethod
   def get_series(self, path):
@@ -64,7 +62,6 @@ class BaseTagDB(object):
 
     If the path is not found in the TagDB, returns None.
     """
-    pass
 
   @abc.abstractmethod
   def list_tags(self, tagFilter=None):
@@ -83,7 +80,6 @@ class BaseTagDB(object):
 
     Accepts an optional filter parameter which is a regular expression used to filter the list of returned tags
     """
-    pass
 
   @abc.abstractmethod
   def get_tag(self, tag, valueFilter=None):
@@ -107,7 +103,6 @@ class BaseTagDB(object):
 
     Accepts an optional filter parameter which is a regular expression used to filter the list of returned tags
     """
-    pass
 
   @abc.abstractmethod
   def list_values(self, tag, valueFilter=None):
@@ -128,21 +123,18 @@ class BaseTagDB(object):
 
     Accepts an optional filter parameter which is a regular expression used to filter the list of returned tags
     """
-    pass
 
   @abc.abstractmethod
   def tag_series(self, series):
     """
     Enter series into database.  Accepts a series string, upserts into the TagDB and returns the canonicalized series name.
     """
-    pass
 
   @abc.abstractmethod
   def del_series(self, series):
     """
     Remove series from database.  Accepts a series string and returns True
     """
-    pass
 
   @staticmethod
   def parse(path):
