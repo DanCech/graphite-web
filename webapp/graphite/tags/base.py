@@ -14,10 +14,9 @@ class BaseTagDB(object):
 
   def __init__(self):
     """Initialize the tag db."""
-    pass
 
-  @logtime(custom_msg=True, custom_name=True)
-  def find_series(self, tags, msg_setter, name_setter):
+  @logtime
+  def find_series(self, tags, timer=None):
     """
     Find series by tag, accepts a list of tag specifiers and returns a list of matching paths.
 
@@ -38,12 +37,12 @@ class BaseTagDB(object):
 
     Matching paths are returned as a list of strings.
     """
-    name_setter('%s.%s.find_series' % (self.__module__, self.__class__.__name__))
+    timer.set_name('%s.%s.find_series' % (self.__module__, self.__class__.__name__))
 
     cacheKey = 'TagDB.find_series:' + ':'.join(sorted(tags))
     result = cache.get(cacheKey)
     if result is not None:
-      msg_setter('completed (cached) in')
+      timer.set_msg('completed (cached) in')
     else:
       result = self._find_series(tags)
       cache.set(cacheKey, result, settings.TAGDB_CACHE_DURATION)
@@ -55,7 +54,6 @@ class BaseTagDB(object):
     """
     Internal function called by find_series, follows the same semantics allowing base class to implement caching
     """
-    pass
 
   @abc.abstractmethod
   def get_series(self, path):
@@ -64,7 +62,6 @@ class BaseTagDB(object):
 
     If the path is not found in the TagDB, returns None.
     """
-    pass
 
   @abc.abstractmethod
   def list_tags(self, tagFilter=None):
@@ -83,7 +80,6 @@ class BaseTagDB(object):
 
     Accepts an optional filter parameter which is a regular expression used to filter the list of returned tags
     """
-    pass
 
   @abc.abstractmethod
   def get_tag(self, tag, valueFilter=None):
@@ -107,7 +103,6 @@ class BaseTagDB(object):
 
     Accepts an optional filter parameter which is a regular expression used to filter the list of returned tags
     """
-    pass
 
   @abc.abstractmethod
   def list_values(self, tag, valueFilter=None):
@@ -128,21 +123,18 @@ class BaseTagDB(object):
 
     Accepts an optional filter parameter which is a regular expression used to filter the list of returned tags
     """
-    pass
 
   @abc.abstractmethod
   def tag_series(self, series):
     """
     Enter series into database.  Accepts a series string, upserts into the TagDB and returns the canonicalized series name.
     """
-    pass
 
   @abc.abstractmethod
   def del_series(self, series):
     """
     Remove series from database.  Accepts a series string and returns True
     """
-    pass
 
   @staticmethod
   def parse(path):
