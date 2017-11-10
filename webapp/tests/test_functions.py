@@ -1577,6 +1577,10 @@ class FunctionsTest(TestCase):
     def test_nonNegativeDerivative_max(self):
         seriesList = self._gen_series_list_with_data(key='test',start=0,end=600,step=60,data=[0, 1, 2, 3, 4, 5, 0, 1, 2, 3])
         expected = [TimeSeries('nonNegativeDerivative(test)', 0, 600, 60, [None, 1, 1, 1, 1, 1, 1, 1, 1, 1])]
+        result = functions.nonNegativeDerivative({}, seriesList,6)
+        self.assertEqual(expected, result, 'nonNegativeDerivative result incorrect')
+
+        expected = [TimeSeries('nonNegativeDerivative(test)', 0, 600, 60, [None, 1, 1, 1, 1, 1, 0, 1, 1, 1])]
         result = functions.nonNegativeDerivative({}, seriesList,5)
         self.assertEqual(expected, result, 'nonNegativeDerivative result incorrect')
 

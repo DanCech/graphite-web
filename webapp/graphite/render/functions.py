@@ -1759,7 +1759,7 @@ def nonNegativeDerivative(requestContext, seriesList, maxValue=None):
       if diff >= 0:
         newValues.append(diff)
       elif maxValue is not None and maxValue >= val:
-        newValues.append( (maxValue - prev) + val  + 1 )
+        newValues.append(maxValue + diff)
       else:
         newValues.append(None)
 
